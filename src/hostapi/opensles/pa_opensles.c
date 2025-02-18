@@ -215,16 +215,48 @@ static PaError IsInputSampleRateSupported(PaOpenslesHostApiRepresentation *opens
 
 static PaError IsOutputChannelCountSupported(PaOpenslesHostApiRepresentation *openslesHostApi, SLuint32 numOfChannels)
 {
-
-    if( numOfChannels > 2 || numOfChannels == 0 )
+    if( numOfChannels == 0 || numOfChannels > 8 )
         return paInvalidChannelCount;
+
+    /* Define channel mask for:
+       1: Mono
+       2: Stereo
+       3: 3-channel (Front Left, Center, Right)
+       4: Quad (Front L+R, Back L+R)
+       5: 5-channel (Front L, Center, R, Back L, Back R)
+       6: 6-channel (5.1: Front L, Center, R, LFE, Back L, Back R)
+       7: 7-channel (7.0: Front L, Center, R, Back L, Back R, Side L, Side R)
+    */
+    static const SLuint32 outputChannelMasks[8] = {
+        /* 1 channel (Mono) */
+        SL_SPEAKER_FRONT_CENTER,
+        /* 2 channels (Stereo) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,
+        /* 3 channels */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT,
+        /* 4 channels (Quad) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT | SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT,
+        /* 5 channels (5.0) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT,
+        /* 6 channels (5.1) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_LOW_FREQUENCY | SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT,
+        /* 7 channels (7.0) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT | SL_SPEAKER_SIDE_LEFT | SL_SPEAKER_SIDE_RIGHT,
+        /* 8 channels (7.1) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_LOW_FREQUENCY | SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT |
+            SL_SPEAKER_SIDE_LEFT | SL_SPEAKER_SIDE_RIGHT
+    };
 
     SLresult slResult;
     SLObjectItf audioPlayer;
     SLObjectItf outputMixObject;
-    const SLuint32 channelMasks[] = { SL_SPEAKER_FRONT_CENTER, SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT };
 
-    (*openslesHostApi->slEngineItf)->CreateOutputMix( openslesHostApi->slEngineItf, &outputMixObject, 0, NULL, NULL );
+    (*openslesHostApi->slEngineItf)->CreateOutputMix( openslesHostApi->slEngineItf,
+                                                      &outputMixObject, 0, NULL, NULL );
     (*outputMixObject)->Realize( outputMixObject, SL_BOOLEAN_FALSE );
 
     SLDataLocator_OutputMix outputLocator = { SL_DATALOCATOR_OUTPUTMIX, outputMixObject };
@@ -232,7 +264,7 @@ static PaError IsOutputChannelCountSupported(PaOpenslesHostApiRepresentation *op
     SLDataLocator_AndroidSimpleBufferQueue outputBQLocator = { SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2 };
     SLDataFormat_PCM  formatPcm = { SL_DATAFORMAT_PCM, numOfChannels, SL_SAMPLINGRATE_16,
                                      SL_PCMSAMPLEFORMAT_FIXED_16, SL_PCMSAMPLEFORMAT_FIXED_16,
-                                     channelMasks[numOfChannels - 1], SL_BYTEORDER_LITTLEENDIAN };
+                                     outputChannelMasks[numOfChannels - 1], SL_BYTEORDER_LITTLEENDIAN };
     SLDataSource audioSrc = { &outputBQLocator, &formatPcm };
 
     slResult = (*openslesHostApi->slEngineItf)->CreateAudioPlayer( openslesHostApi->slEngineItf,
@@ -255,7 +287,29 @@ static PaError IsInputChannelCountSupported(PaOpenslesHostApiRepresentation *ope
 {
     SLresult slResult;
     SLObjectItf audioRecorder;
-    const SLuint32 channelMasks[] = { SL_SPEAKER_FRONT_CENTER, SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT };
+    static const SLuint32 outputChannelMasks[8] = {
+        /* 1 channel (Mono) */
+        SL_SPEAKER_FRONT_CENTER,
+        /* 2 channels (Stereo) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,
+        /* 3 channels */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT,
+        /* 4 channels (Quad) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT | SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT,
+        /* 5 channels (5.0) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT,
+        /* 6 channels (5.1) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_LOW_FREQUENCY | SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT,
+        /* 7 channels (7.0) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT | SL_SPEAKER_SIDE_LEFT | SL_SPEAKER_SIDE_RIGHT,
+        /* 8 channels (7.1) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_LOW_FREQUENCY | SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT |
+            SL_SPEAKER_SIDE_LEFT | SL_SPEAKER_SIDE_RIGHT
+    };
 
     SLDataLocator_IODevice inputLocator = {SL_DATALOCATOR_IODEVICE,
                                            SL_IODEVICE_AUDIOINPUT,
@@ -342,8 +396,8 @@ PaError PaOpenSLES_Initialize( PaUtilHostApiRepresentation **hostApi, PaHostApiI
         /* android selects it's own device, so we'll just expose a default device */
         deviceInfo->name = "default";
 
-        const SLuint32 channelsToTry[] = { 2, 1 };
-        const SLuint32 channelsToTryLength = 2;
+        const SLuint32 channelsToTry[] = { 8, 7, 6, 5, 4, 3, 2, 1 };
+        const SLuint32 channelsToTryLength = 8;
         deviceInfo->maxOutputChannels = 0;
         deviceInfo->maxInputChannels = 0;
         for( i = 0; i < channelsToTryLength; ++i )
@@ -834,12 +888,34 @@ static PaError InitializeOutputStream(PaOpenslesHostApiRepresentation *openslesH
     PaError result = paNoError;
     SLresult slResult;
     int i, j;
-    const SLuint32 channelMasks[] = { SL_SPEAKER_FRONT_CENTER, SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT };
+    static const SLuint32 outputChannelMasks[8] = {
+        /* 1 channel (Mono) */
+        SL_SPEAKER_FRONT_CENTER,
+        /* 2 channels (Stereo) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,
+        /* 3 channels */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT,
+        /* 4 channels (Quad) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT | SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT,
+        /* 5 channels (5.0) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT,
+        /* 6 channels (5.1) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_LOW_FREQUENCY | SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT,
+        /* 7 channels (7.0) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT | SL_SPEAKER_SIDE_LEFT | SL_SPEAKER_SIDE_RIGHT,
+        /* 8 channels (7.1) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_LOW_FREQUENCY | SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT |
+            SL_SPEAKER_SIDE_LEFT | SL_SPEAKER_SIDE_RIGHT
+    };
     SLDataLocator_AndroidSimpleBufferQueue outputBQLocator = { SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, numberOfBuffers };
 #if __ANDROID_API__ >= 21
     SLAndroidDataFormat_PCM_EX  formatPcm = { SL_ANDROID_DATAFORMAT_PCM_EX, stream->bufferProcessor.outputChannelCount,
                                               sampleRate * 1000.0, stream->outputStream->bytesPerSample * 8, stream->outputStream->bytesPerSample * 8,
-                                              channelMasks[stream->bufferProcessor.outputChannelCount - 1], SL_BYTEORDER_LITTLEENDIAN,  stream->outputStream->format};
+                                              outputChannelMasks[stream->bufferProcessor.outputChannelCount - 1], SL_BYTEORDER_LITTLEENDIAN,  stream->outputStream->format};
 #else
     SLDataFormat_PCM  formatPcm = { SL_DATAFORMAT_PCM, stream->bufferProcessor.outputChannelCount,
                                     sampleRate * 1000.0, stream->outputStream->bytesPerSample * 8, stream->outputStream->bytesPerSample * 8,
@@ -934,7 +1010,29 @@ static PaError InitializeInputStream( PaOpenslesHostApiRepresentation *openslesH
     PaError result = paNoError;
     SLresult slResult = SL_RESULT_SUCCESS;
     int i, j;
-    const SLuint32 channelMasks[] = { SL_SPEAKER_FRONT_CENTER, SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT };
+    static const SLuint32 outputChannelMasks[8] = {
+        /* 1 channel (Mono) */
+        SL_SPEAKER_FRONT_CENTER,
+        /* 2 channels (Stereo) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,
+        /* 3 channels */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT,
+        /* 4 channels (Quad) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT | SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT,
+        /* 5 channels (5.0) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT,
+        /* 6 channels (5.1) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_LOW_FREQUENCY | SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT,
+        /* 7 channels (7.0) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT | SL_SPEAKER_SIDE_LEFT | SL_SPEAKER_SIDE_RIGHT,
+        /* 8 channels (7.1) */
+        SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_FRONT_RIGHT |
+            SL_SPEAKER_LOW_FREQUENCY | SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT |
+            SL_SPEAKER_SIDE_LEFT | SL_SPEAKER_SIDE_RIGHT
+    };
 
     SLDataLocator_IODevice inputLocator = {SL_DATALOCATOR_IODEVICE,
                                            SL_IODEVICE_AUDIOINPUT,
