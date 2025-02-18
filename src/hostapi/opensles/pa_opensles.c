@@ -319,7 +319,7 @@ static PaError IsInputChannelCountSupported(PaOpenslesHostApiRepresentation *ope
     SLDataLocator_AndroidSimpleBufferQueue inputBQLocator = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2};
     SLDataFormat_PCM formatPcm = {SL_DATAFORMAT_PCM, numOfChannels, SL_SAMPLINGRATE_16,
                                   SL_PCMSAMPLEFORMAT_FIXED_16, SL_PCMSAMPLEFORMAT_FIXED_16,
-                                  channelMasks[numOfChannels - 1], SL_BYTEORDER_LITTLEENDIAN};
+                                  outputChannelMasks[numOfChannels - 1], SL_BYTEORDER_LITTLEENDIAN};
     SLDataSink audioSink = {&inputBQLocator, &formatPcm};
 
     slResult = (*openslesHostApi->slEngineItf)->CreateAudioRecorder(openslesHostApi->slEngineItf,
@@ -919,7 +919,7 @@ static PaError InitializeOutputStream(PaOpenslesHostApiRepresentation *openslesH
 #else
     SLDataFormat_PCM  formatPcm = { SL_DATAFORMAT_PCM, stream->bufferProcessor.outputChannelCount,
                                     sampleRate * 1000.0, stream->outputStream->bytesPerSample * 8, stream->outputStream->bytesPerSample * 8,
-                                    channelMasks[stream->bufferProcessor.outputChannelCount - 1], SL_BYTEORDER_LITTLEENDIAN };
+                                    outputChannelMasks[stream->bufferProcessor.outputChannelCount - 1], SL_BYTEORDER_LITTLEENDIAN };
 #endif
     SLDataSource audioSrc = { &outputBQLocator, &formatPcm };
 
@@ -1042,11 +1042,11 @@ static PaError InitializeInputStream( PaOpenslesHostApiRepresentation *openslesH
 #if __ANDROID_API__ >= 21
     SLAndroidDataFormat_PCM_EX  formatPcm = { SL_ANDROID_DATAFORMAT_PCM_EX, stream->bufferProcessor.inputChannelCount,
                                               sampleRate * 1000.0, stream->inputStream->bytesPerSample * 8, stream->inputStream->bytesPerSample * 8,
-                                              channelMasks[stream->bufferProcessor.inputChannelCount - 1], SL_BYTEORDER_LITTLEENDIAN,  stream->inputStream->format};
+                                              outputChannelMasks[stream->bufferProcessor.inputChannelCount - 1], SL_BYTEORDER_LITTLEENDIAN,  stream->inputStream->format};
 #else
     SLDataFormat_PCM  formatPcm = { SL_DATAFORMAT_PCM, stream->bufferProcessor.inputChannelCount,
                                     sampleRate * 1000.0, stream->inputStream->bytesPerSample * 8, stream->inputStream->bytesPerSample * 8,
-                                    channelMasks[stream->bufferProcessor.inputChannelCount - 1],
+                                    outputChannelMasks[stream->bufferProcessor.inputChannelCount - 1],
                                     SL_BYTEORDER_LITTLEENDIAN };
 #endif
 
