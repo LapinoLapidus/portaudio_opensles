@@ -229,7 +229,7 @@ static PaError IsOutputChannelCountSupported(PaOpenslesHostApiRepresentation *op
     */
     static const SLuint32 outputChannelMasks[8] = {
         /* 1 channel (Mono) */
-        SL_SPEAKER_FRONT_CENTER,
+        SL_SPEAKER_FRONT_LEFT,
         /* 2 channels (Stereo) */
         SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,
         /* 3 channels */
@@ -289,7 +289,7 @@ static PaError IsInputChannelCountSupported(PaOpenslesHostApiRepresentation *ope
     SLObjectItf audioRecorder;
     static const SLuint32 outputChannelMasks[8] = {
         /* 1 channel (Mono) */
-        SL_SPEAKER_FRONT_CENTER,
+        SL_SPEAKER_FRONT_LEFT,
         /* 2 channels (Stereo) */
         SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,
         /* 3 channels */
@@ -890,7 +890,7 @@ static PaError InitializeOutputStream(PaOpenslesHostApiRepresentation *openslesH
     int i, j;
     static const SLuint32 outputChannelMasks[8] = {
         /* 1 channel (Mono) */
-        SL_SPEAKER_FRONT_CENTER,
+        SL_SPEAKER_FRONT_LEFT,
         /* 2 channels (Stereo) */
         SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,
         /* 3 channels */
@@ -1012,7 +1012,7 @@ static PaError InitializeInputStream( PaOpenslesHostApiRepresentation *openslesH
     int i, j;
     static const SLuint32 outputChannelMasks[8] = {
         /* 1 channel (Mono) */
-        SL_SPEAKER_FRONT_CENTER,
+        SL_SPEAKER_FRONT_LEFT,
         /* 2 channels (Stereo) */
         SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,
         /* 3 channels */
@@ -1565,3 +1565,4 @@ void PaOpenSLES_SetNumberOfBuffers( unsigned buffers )
 {
     numberOfBuffers = buffers;
 }
+
