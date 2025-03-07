@@ -388,75 +388,58 @@ PaError PaOpenSLES_Initialize( PaUtilHostApiRepresentation **hostApi, PaHostApiI
         goto error;
     }
 
-    for( i=0; i < deviceCount; ++i )
+    for( i = 0; i < deviceCount; ++i )
     {
         PaDeviceInfo *deviceInfo = &deviceInfoArray[i];
         deviceInfo->structVersion = 2;
         deviceInfo->hostApi = hostApiIndex;
-        /* android selects it's own device, so we'll just expose a default device */
+        /* android selects its own device, so we'll just expose a default device */
         deviceInfo->name = "default";
 
         const SLuint32 channelsToTry[] = { 8, 7, 6, 5, 4, 3, 2, 1 };
-        const SLuint32 channelsToTryLength = 8;
+        const SLuint32 channelsToTryLength = sizeof(channelsToTry) / sizeof(channelsToTry[0]);
         deviceInfo->maxOutputChannels = 0;
         deviceInfo->maxInputChannels = 0;
-        for( i = 0; i < channelsToTryLength; ++i )
+
+        int j;
+        for( j = 0; j < channelsToTryLength; ++j )
         {
-            if( IsOutputChannelCountSupported(openslesHostApi, channelsToTry[i]) == paNoError )
+            if( IsOutputChannelCountSupported(openslesHostApi, channelsToTry[j]) == paNoError )
             {
-                deviceInfo->maxOutputChannels = channelsToTry[i];
+                deviceInfo->maxOutputChannels = channelsToTry[j];
                 break;
             }
         }
-        for( i = 0; i < channelsToTryLength; ++i )
+        for( j = 0; j < channelsToTryLength; ++j )
         {
-            if( IsInputChannelCountSupported(openslesHostApi, channelsToTry[i]) == paNoError )
+            if( IsInputChannelCountSupported(openslesHostApi, channelsToTry[j]) == paNoError )
             {
-                deviceInfo->maxInputChannels = channelsToTry[i];
+                deviceInfo->maxInputChannels = channelsToTry[j];
                 break;
             }
         }
 
         /* check samplerates in order of preference */
         const SLuint32 sampleRates[] = { SL_SAMPLINGRATE_48, SL_SAMPLINGRATE_44_1,
-                                         SL_SAMPLINGRATE_32, SL_SAMPLINGRATE_24,
-                                         SL_SAMPLINGRATE_16};
-        const SLuint32 numberOfSampleRates = 5;
-        deviceInfo->defaultSampleRate = 0;
-        for( i = 0; i < numberOfSampleRates; ++i )
-        {
-            if( IsOutputSampleRateSupported(openslesHostApi, sampleRates[i]) == paNoError
-                && IsInputSampleRateSupported(openslesHostApi, sampleRates[i]) == paNoError )
+            SL_SAMPLINGRATE_32, SL_SAMPLINGRATE_24,
+            SL_SAMPLINGRATE_16};
+            const SLuint32 numberOfSampleRates = sizeof(sampleRates) / sizeof(sampleRates[0]);
+            deviceInfo->defaultSampleRate = 0;
+            for( j = 0; j < numberOfSampleRates; ++j )
             {
-                /* opensl defines sampling rates in milliHertz, so we divide by 1000 */
-                deviceInfo->defaultSampleRate = sampleRates[i] / 1000;
-                break;
+                if( IsOutputSampleRateSupported(openslesHostApi, sampleRates[j]) == paNoError &&
+                    IsInputSampleRateSupported(openslesHostApi, sampleRates[j]) == paNoError )
+                {
+                    /* OpenSL ES defines sample rates in milliHertz so we divide by 1000 */
+                    deviceInfo->defaultSampleRate = sampleRates[j] / 1000;
+                    break;
+                }
             }
-        }
-        if( deviceInfo->defaultSampleRate == 0 )
-            goto error;
-
-        /* If the user has set nativeBufferSize by querying the optimal buffer size via java,
-         * use the user-defined value since that will offer the lowest possible latency
-         */
-        if( nativeBufferSize != 0 )
-        {
-            deviceInfo->defaultLowInputLatency = (double) nativeBufferSize / deviceInfo->defaultSampleRate;
-            deviceInfo->defaultLowOutputLatency = (double) nativeBufferSize / deviceInfo->defaultSampleRate;
-            deviceInfo->defaultHighInputLatency = (double) nativeBufferSize * 4 / deviceInfo->defaultSampleRate;
-            deviceInfo->defaultHighOutputLatency = (double) nativeBufferSize * 4 / deviceInfo->defaultSampleRate;
-        }
-        else
-        {
-            deviceInfo->defaultLowInputLatency = (double) GetApproximateLowBufferSize() / deviceInfo->defaultSampleRate;
-            deviceInfo->defaultLowOutputLatency = (double) GetApproximateLowBufferSize() / deviceInfo->defaultSampleRate;
-            deviceInfo->defaultHighInputLatency = (double) GetApproximateLowBufferSize() * 4 / deviceInfo->defaultSampleRate;
-            deviceInfo->defaultHighOutputLatency = (double) GetApproximateLowBufferSize() * 4 / deviceInfo->defaultSampleRate;
-        }
+            if( deviceInfo->defaultSampleRate == 0 )
+                goto error;
 
         (*hostApi)->deviceInfos[i] = deviceInfo;
         ++(*hostApi)->info.deviceCount;
-
     }
 
     (*hostApi)->Terminate = Terminate;
